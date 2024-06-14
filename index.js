@@ -59,9 +59,9 @@ app.post('/user/login', (req, res) => {
 // Ruta para manejar el POST
 app.post('/user', (req, res) => {
     try {
-        const { nombre, apellido, gmail, contraseña, roll, estado} = req.body;
-        const sql = 'INSERT INTO usuarios (nombre, apellido, gmail,contraseña) VALUES (?, ?, ?, ?, ?, ?)';
-        db.run(sql, [nombre,apellido,  gmail, contraseña], function(err) {
+        const { nombre, apellido, gmail, contraseña} = req.body;
+        const sql = 'INSERT INTO usuarios (nombre, apellido, gmail, contraseña) VALUES (?, ?, ?, ?)';
+        db.run(sql, [nombre, apellido,  gmail, contraseña], function(err) {
             if (err) {
                 console.error('Error al insertar usuario: ' + err.message);
                 res.status(400).json({ status: 400, success: false });
