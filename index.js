@@ -120,9 +120,9 @@ app.get('/user/:id', (req, res) => {
 // Ruta para manejar el PUT de una usuarios por ID
 app.put('/user/:id', (req, res) => {
     const id = req.params.id;
-    const {nombre, apellido, gmail, contraseña, roll, estado } = req.body;
+    const {nombre, apellido, gmail, contraseña} = req.body;
     const sql = 'UPDATE usuarios SET nombre = ?, apellido = ?, gmail = ?, contraseña = ? WHERE id_usuario = ?';
-    db.run(sql, [nombre, apellido, gmail, contraseña, roll, estado, id], function(err) {
+    db.run(sql, [nombre, apellido, gmail, contraseña, id], function(err) {
         if (err) {
             console.error('Error al actualizar usuarios: ' + err.message);
             res.status(400).json({ status: 400, success: false });
