@@ -2,6 +2,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 
 
 const app = express();
@@ -26,6 +28,90 @@ const db = new sqlite3.Database('./user.db', sqlite3.OPEN_READWRITE | sqlite3.OP
 
 app.use(bodyParser.json());
 
+
+// Codigos
+const recoveryCodes = {};
+
+//Configuración del nodemailer
+const transporter = nodemailer.createTransport({
+    service: 'Gmail',
+    auth: {
+        user: 'modisteriadl@gmail.com',
+        pass: 'qdjq yatp zozg msyi', 
+    },
+});
+
+// Funcion para enviar correo
+app.post('/enviarCorreo', (req, res) => {
+    const { email } = req.body;
+
+    const sql = 'SELECT * FROM usuarios WHERE gmail = ?';
+    db.get(sql, [email], (err, row) => {
+
+        if (err) {
+            console.error('Error al obtener usuario por Gmail: ' + err.message);
+            res.status(500).json({ status: 500, success: false });
+        } 
+        else {
+            if (row) {
+                const code = crypto.randomBytes(3).toString('hex'); // Genera un código aleatorio de 6 caracteres
+                recoveryCodes[email] = code;
+
+                // Configura el correo
+                const mailOptions = {
+                    from: 'modisteriadl@gmail.com',
+                    to: email,
+                    subject: '🎉🎊 Código de Recuperación de Contraseña 🎊🎉',
+                    text: `Tu código de recuperación es: ${code}`,
+                };
+
+                // Envía el correo
+                transporter.sendMail(mailOptions, (error, info) => {
+                if (error) {
+                    console.error(error);
+                    return res.status(500).send({ message: 'Error al enviar el correo' });
+                }
+                res.status(200).send({ message: 'Código de recuperación enviado' });
+            });
+
+            } else {
+                res.status(404).json({ status: 404, success: false, message:` Usuario con correo ${email} no encontrado `});
+            }
+        }
+    });
+});
+
+app.post('/validarCodigo', (req, res) => {
+    const { email, code } = req.body;
+
+    if (recoveryCodes[email] === code) {
+        res.status(200).send({ message: 'Código verificado' });
+    } else {
+        res.status(400).send({ message: 'Código incorrecto' });
+    }
+});
+
+// Endpoint para actualizar la contraseña
+app.put('/actualizarPass', (req, res) => {
+    const { email, contraseña } = req.body;
+
+    const sql = 'UPDATE usuarios SET contraseña = ? WHERE gmail = ?';
+    db.run(sql, [contraseña, email], function(err) {
+        if (err) {
+            console.error('Error al actualizar la contraseña: ' + err.message);
+            res.status(400).json({ status: 400, success: false });
+        } else {
+            if (this.changes > 0) {
+                console.log(`usuarios con correo ${email} actualizado.`);
+                delete recoveryCodes[email]; // Eliminamos el código de recuperación ya que fue utilizado
+                res.status(200).json({ status: 200, success: true });
+            } else {
+                res.status(404).json({ status: 404, success: false, message: `usuarios con correo ${email} no encontrado` });
+            }
+        }
+    });
+
+});
 
 // Función para crear la tabla
 function createTable() {
